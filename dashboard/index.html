@@ -73,7 +73,7 @@
       </div>
       <div class="table-section">
         <div class="table-header">
-          <h3 id="tableTitle">50 States - 2024</h3>
+          <h3 id="tableTitle">50 States - 2025</h3>
           <input type="text" class="table-search" id="tableSearch" placeholder="Search state...">
         </div>
         <div class="table-wrapper">
@@ -143,6 +143,77 @@
       </div>
     </section>
 
+    <!-- Pest Activity Intelligence -->
+    <section>
+      <div class="section-header">
+        <h2>Pest Activity Intelligence</h2>
+        <p>Orkin 2025 Top 50 city rankings aggregated to state level - identifying where pest demand is highest</p>
+      </div>
+      <div class="pest-intel-grid">
+        <!-- Pest Pressure vs Competition scatter -->
+        <div class="chart-card">
+          <h3>Opportunity Gap Analysis</h3>
+          <p class="chart-subtitle">High pest pressure + low competition = prime expansion target (top-left is ideal)</p>
+          <div class="chart-canvas-container">
+            <canvas id="pestOpportunityChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Pest breakdown for selected state -->
+        <div class="chart-card pest-breakdown-card">
+          <h3>Pest Category Breakdown</h3>
+          <p class="chart-subtitle" id="pestBreakdownSubtitle">Select a state to view pest pressure by category</p>
+          <div id="pestBreakdownContent">
+            <div class="pest-placeholder" id="pestPlaceholder">
+              <p>Click a state on the map or table to see its pest activity profile</p>
+            </div>
+            <div id="pestDetail" style="display:none;">
+              <div class="pest-score-header">
+                <span class="pest-score-label">Pest Pressure Score</span>
+                <span class="pest-score-value" id="pestScoreValue">--</span>
+                <span class="pest-score-max">/ 100</span>
+              </div>
+              <div class="pest-bars" id="pestCategoryBars"></div>
+              <div class="pest-cities-section">
+                <h4>Top Ranked Cities in State</h4>
+                <div id="pestCityList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top states by pest pressure -->
+        <div class="chart-card pest-ranking-card">
+          <h3>Top 15 States by Pest Pressure</h3>
+          <p class="chart-subtitle">States with the most Orkin-ranked city appearances</p>
+          <div class="chart-canvas-container">
+            <canvas id="pestRankingChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Pest type heatmap table -->
+        <div class="chart-card pest-heatmap-card">
+          <h3>Pest Pressure by Category</h3>
+          <p class="chart-subtitle">Score breakdown across 4 major pest categories (top 20 states)</p>
+          <div class="pest-heatmap-wrapper">
+            <table class="pest-heatmap-table" id="pestHeatmapTable">
+              <thead>
+                <tr>
+                  <th>State</th>
+                  <th>Total</th>
+                  <th class="pest-col-mosquito">Mosquitoes</th>
+                  <th class="pest-col-bedbug">Bed Bugs</th>
+                  <th class="pest-col-termite">Termites</th>
+                  <th class="pest-col-rodent">Rodents</th>
+                </tr>
+              </thead>
+              <tbody id="pestHeatmapBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Sources & Methodology -->
     <section>
       <div class="section-header">
@@ -170,12 +241,24 @@
         <div class="methodology-card">
           <h3>Data Sources</h3>
           <ul class="methodology-list">
-            <li><strong>Population</strong> - U.S. Census Bureau, Population Estimates Program (PEP), Vintage 2024</li>
+            <li><strong>Population</strong> - U.S. Census Bureau, Population Estimates Program (PEP), Vintage 2025 (released Jan 2026)</li>
             <li><strong>Pest Control Firms</strong> - U.S. Census Bureau, County Business Patterns (CBP), NAICS 561710 (Exterminating and Pest Control Services)</li>
             <li><strong>Housing Age</strong> - U.S. Census Bureau, American Community Survey (ACS) 5-Year Estimates, Table B25034 (Year Structure Built)</li>
             <li><strong>Climate Risk</strong> - Composite index derived from NOAA Climate Normals (temperature, humidity, precipitation) and FEMA National Risk Index</li>
             <li><strong>Population Growth</strong> - Derived from year-over-year Census PEP estimates</li>
+            <li><strong>Pest Activity</strong> - Orkin 2025 Top 50 City Rankings for Mosquitoes, Bed Bugs, Termites, and Rodents. Based on new residential treatments performed. Cities aggregated to state level.</li>
           </ul>
+        </div>
+        <div class="methodology-card">
+          <h3>Update Schedule</h3>
+          <p>This tool is updated <strong>annually</strong> when new data becomes available:</p>
+          <ul class="methodology-list">
+            <li><strong>Population</strong> - Census Vintage estimates released each December/January</li>
+            <li><strong>Pest Firms</strong> - Census CBP data released approximately April each year (1-2 year lag)</li>
+            <li><strong>Housing Age</strong> - ACS 5-Year estimates released each December</li>
+            <li><strong>Pest Activity</strong> - Orkin publishes updated city rankings throughout the year by pest category</li>
+          </ul>
+          <p style="margin-top:8px;font-size:0.85rem;color:var(--text-secondary);">Last updated: February 2026</p>
         </div>
         <div class="methodology-card">
           <h3>Opportunity Bands</h3>
@@ -209,6 +292,7 @@
 
   <!-- Application -->
   <script src="data.js"></script>
+  <script src="pest_data.js"></script>
   <script src="engine.js"></script>
   <script src="app.js"></script>
 </body>

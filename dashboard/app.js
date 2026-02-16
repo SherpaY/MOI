@@ -8,7 +8,7 @@
   // --- State ---
   let allRawData = [...STATE_MARKET_DATA];
   let engine = new MOIEngine(allRawData);
-  let currentYear = 2024;
+  let currentYear = 2025;
   let currentData = [];
   let selectedState = null;
   let sortCol = "rank";
@@ -20,6 +20,8 @@
   let quadrantChart = null;
   let scatterChart = null;
   let histogramChart = null;
+  let pestOpportunityChart = null;
+  let pestRankingChart = null;
 
   // --- DOM Refs ---
   const $ = (sel) => document.querySelector(sel);
@@ -91,6 +93,9 @@
     renderScatterChart();
     renderHistogram();
     renderMapLegend();
+    renderPestOpportunityChart();
+    renderPestRankingChart();
+    renderPestHeatmap();
     $("#tableTitle").textContent = `50 States - ${currentYear}`;
   }
 
@@ -148,6 +153,7 @@
     const stateData = currentData.find(d => d.abbr === abbr);
     updateHeroCard(stateData);
     renderBreakdown(stateData);
+    renderPestBreakdown(abbr);
     renderTable();
     highlightMapState(abbr);
     highlightChartPoint(abbr);
@@ -811,6 +817,341 @@
     // Re-render charts with new selection highlights
     renderQuadrantChart();
     renderScatterChart();
+  }
+
+  // --- Pest Activity Intelligence ---
+
+  // Pest breakdown for selected state
+  function renderPestBreakdown(abbr) {
+    const placeholder = $("#pestPlaceholder");
+    const detail = $("#pestDetail");
+    const subtitle = $("#pestBreakdownSubtitle");
+
+    if (!abbr || !PEST_PRESSURE_DATA[abbr]) {
+      if (placeholder) placeholder.style.display = "flex";
+      if (detail) detail.style.display = "none";
+      subtitle.textContent = "Select a state to view pest pressure by category";
+      return;
+    }
+
+    const pd = PEST_PRESSURE_DATA[abbr];
+    const stateName = STATE_ABBR_TO_NAME[abbr] || abbr;
+
+    placeholder.style.display = "none";
+    detail.style.display = "block";
+    subtitle.textContent = `${stateName} - Pest activity from Orkin 2025 rankings`;
+
+    $("#pestScoreValue").textContent = pd.normalized.toFixed(0);
+
+    // Category bars
+    const maxCatScore = 160; // Reasonable max for visual scaling
+    const pestTypes = ["Mosquitoes", "Bed Bugs", "Termites", "Rodents"];
+    const bars = $("#pestCategoryBars");
+
+    bars.innerHTML = pestTypes.map(pest => {
+      const score = pd.scores[pest] || 0;
+      const pct = Math.min((score / maxCatScore) * 100, 100);
+      const color = PEST_COLORS[pest];
+      return `
+        <div class="pest-bar-row">
+          <span class="pest-bar-label">${pest}</span>
+          <div class="pest-bar-track">
+            <div class="pest-bar-fill" style="width:${pct}%;background:${color};"></div>
+          </div>
+          <span class="pest-bar-value">${score}</span>
+        </div>
+      `;
+    }).join("");
+
+    // City list
+    const cityList = $("#pestCityList");
+    const allCities = [];
+    pestTypes.forEach(pest => {
+      const cities = pd.cities[pest] || [];
+      cities.forEach(c => {
+        allCities.push({ ...c, pest, color: PEST_COLORS[pest] });
+      });
+    });
+
+    // Sort by rank
+    allCities.sort((a, b) => a.rank - b.rank);
+
+    if (allCities.length === 0) {
+      cityList.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem;">No cities in Orkin 2025 Top 50 lists</p>';
+    } else {
+      cityList.innerHTML = allCities.slice(0, 10).map(c => `
+        <div class="pest-city-item">
+          <span class="pest-city-rank">#${c.rank}</span>
+          <span class="pest-city-name">${c.city}</span>
+          <span class="pest-city-type" style="background:${c.color};">${c.pest}</span>
+        </div>
+      `).join("");
+    }
+
+    // Animate bars
+    requestAnimationFrame(() => {
+      bars.querySelectorAll(".pest-bar-fill").forEach(bar => {
+        const w = bar.style.width;
+        bar.style.width = "0%";
+        requestAnimationFrame(() => { bar.style.width = w; });
+      });
+    });
+  }
+
+  // Opportunity Gap: Pest Pressure vs Competition Density
+  function renderPestOpportunityChart() {
+    const canvas = $("#pestOpportunityChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (pestOpportunityChart) pestOpportunityChart.destroy();
+
+    const data = currentData.map(d => {
+      const pd = PEST_PRESSURE_DATA[d.abbr] || { normalized: 0 };
+      return {
+        x: d.comp_density,
+        y: pd.normalized,
+        label: d.abbr,
+        state: d.state,
+        moi: d.moi,
+        pestScore: pd.normalized,
+        appearances: (pd.appearances || 0)
+      };
+    });
+
+    const avgX = data.reduce((s, d) => s + d.x, 0) / data.length;
+    const avgY = data.reduce((s, d) => s + d.y, 0) / data.length;
+
+    pestOpportunityChart = new Chart(ctx, {
+      type: "scatter",
+      data: {
+        datasets: [{
+          data: data,
+          backgroundColor: data.map(d => {
+            const c = MOIEngine.getMOIColor(d.moi);
+            return d.label === selectedState ? c : c + "99";
+          }),
+          borderColor: data.map(d =>
+            d.label === selectedState ? "#0f172a" : "transparent"
+          ),
+          borderWidth: data.map(d => d.label === selectedState ? 2 : 0),
+          pointRadius: data.map(d => d.label === selectedState ? 9 : Math.max(4, d.appearances * 0.8 + 3)),
+          pointHoverRadius: 10
+        }]
+      },
+      options: {
+        ...getChartDefaults(),
+        animation: { duration: 800, easing: "easeOutQuart" },
+        plugins: {
+          ...getChartDefaults().plugins,
+          tooltip: {
+            ...getChartDefaults().plugins.tooltip,
+            callbacks: {
+              title: (items) => items[0].raw.state,
+              label: (item) => {
+                const d = item.raw;
+                return [
+                  `MOI: ${d.moi.toFixed(1)}`,
+                  `Pest Pressure: ${d.pestScore.toFixed(0)}/100`,
+                  `Firms per 100K: ${d.x.toFixed(1)}`,
+                  `Orkin Appearances: ${d.appearances}`
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ...getChartDefaults().scales.x,
+            title: {
+              display: true,
+              text: "Competition Density (Firms per 100K) ->",
+              color: "#64748b",
+              font: { size: 11, weight: "600" }
+            }
+          },
+          y: {
+            ...getChartDefaults().scales.y,
+            title: {
+              display: true,
+              text: "Pest Pressure Score (Orkin)",
+              color: "#64748b",
+              font: { size: 11, weight: "600" }
+            },
+            min: 0,
+            max: 105
+          }
+        },
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            selectState(data[elements[0].index].label);
+          }
+        }
+      },
+      plugins: [{
+        id: "pestQuadrantLines",
+        afterDraw(chart) {
+          const { ctx, scales: { x, y } } = chart;
+          const xPixel = x.getPixelForValue(avgX);
+          const yPixel = y.getPixelForValue(avgY);
+
+          ctx.save();
+          ctx.setLineDash([4, 4]);
+          ctx.strokeStyle = "rgba(0,0,0,0.1)";
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(xPixel, y.top); ctx.lineTo(xPixel, y.bottom); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x.left, yPixel); ctx.lineTo(x.right, yPixel); ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.font = "600 10px Inter, sans-serif";
+          ctx.fillStyle = "rgba(0,0,0,0.08)";
+          ctx.textAlign = "center";
+          ctx.fillText("PRIME TARGET", (x.left + xPixel) / 2, y.top + 18);
+          ctx.fillText("HIGH DEMAND + COMPETITIVE", (xPixel + x.right) / 2, y.top + 18);
+          ctx.fillText("LOW DEMAND + OPEN", (x.left + xPixel) / 2, y.bottom - 8);
+          ctx.fillText("SATURATED + LOW DEMAND", (xPixel + x.right) / 2, y.bottom - 8);
+
+          // Labels
+          const dataset = chart.data.datasets[0].data;
+          ctx.font = "600 9px Inter, sans-serif";
+          ctx.textAlign = "center";
+          dataset.forEach((d, i) => {
+            const meta = chart.getDatasetMeta(0).data[i];
+            if (d.label === selectedState || (d.pestScore > 50 && d.x < avgX) || d.pestScore > 70) {
+              ctx.fillStyle = d.label === selectedState ? "#0f172a" : "rgba(0,0,0,0.4)";
+              ctx.fillText(d.label, meta.x, meta.y - 12);
+            }
+          });
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  // Top 15 States by Pest Pressure - horizontal bar chart
+  function renderPestRankingChart() {
+    const canvas = $("#pestRankingChart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (pestRankingChart) pestRankingChart.destroy();
+
+    // Sort states by pest pressure
+    const ranked = Object.entries(PEST_PRESSURE_DATA)
+      .filter(([, d]) => d.total > 0)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 15);
+
+    const labels = ranked.map(([abbr]) => STATE_ABBR_TO_NAME[abbr] || abbr);
+    const pestTypes = ["Mosquitoes", "Bed Bugs", "Termites", "Rodents"];
+
+    pestRankingChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: pestTypes.map(pest => ({
+          label: pest,
+          data: ranked.map(([, d]) => d.scores[pest] || 0),
+          backgroundColor: PEST_COLORS[pest],
+          borderRadius: 2,
+          barPercentage: 0.7,
+          categoryPercentage: 0.85
+        }))
+      },
+      options: {
+        ...getChartDefaults(),
+        indexAxis: "y",
+        animation: { duration: 800 },
+        plugins: {
+          ...getChartDefaults().plugins,
+          legend: {
+            display: true,
+            position: "top",
+            labels: {
+              boxWidth: 12,
+              padding: 12,
+              font: { size: 11, weight: "500" },
+              color: "#475569"
+            }
+          },
+          tooltip: {
+            ...getChartDefaults().plugins.tooltip,
+            mode: "index",
+            callbacks: {
+              afterBody: (items) => {
+                const total = items.reduce((s, i) => s + (i.raw || 0), 0);
+                return `Total: ${total}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ...getChartDefaults().scales.x,
+            stacked: true,
+            title: {
+              display: true,
+              text: "Pest Pressure Score",
+              color: "#64748b",
+              font: { size: 11, weight: "600" }
+            }
+          },
+          y: {
+            ...getChartDefaults().scales.y,
+            stacked: true,
+            ticks: {
+              color: "#475569",
+              font: { size: 11, weight: "500" }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Pest Heatmap Table
+  function renderPestHeatmap() {
+    const tbody = $("#pestHeatmapBody");
+    if (!tbody) return;
+
+    const ranked = Object.entries(PEST_PRESSURE_DATA)
+      .filter(([, d]) => d.total > 0)
+      .sort((a, b) => b[1].normalized - a[1].normalized)
+      .slice(0, 20);
+
+    const maxScores = {
+      "Mosquitoes": 120, "Bed Bugs": 185, "Termites": 240, "Rodents": 160
+    };
+
+    tbody.innerHTML = ranked.map(([abbr, pd]) => {
+      const stateName = STATE_ABBR_TO_NAME[abbr] || abbr;
+      const pestTypes = ["Mosquitoes", "Bed Bugs", "Termites", "Rodents"];
+
+      const cells = pestTypes.map(pest => {
+        const score = pd.scores[pest] || 0;
+        const maxS = maxScores[pest];
+        const intensity = Math.min(score / maxS, 1);
+        const color = PEST_COLORS[pest];
+        const bg = score > 0
+          ? `${color}${Math.round(intensity * 40 + 15).toString(16).padStart(2, "0")}`
+          : "transparent";
+        return `<td><span class="pest-heat-cell" style="background:${bg};color:${score > 0 ? color : "var(--text-muted)"}">${score || "-"}</span></td>`;
+      }).join("");
+
+      const isSelected = abbr === selectedState;
+      return `<tr style="${isSelected ? "background:var(--bg-secondary);font-weight:600;" : ""}" data-abbr="${abbr}">
+        <td><strong>${stateName}</strong> <span style="color:var(--text-muted);font-size:0.7rem;">${abbr}</span></td>
+        <td><strong>${pd.normalized.toFixed(0)}</strong></td>
+        ${cells}
+      </tr>`;
+    }).join("");
+
+    // Click handlers
+    tbody.querySelectorAll("tr").forEach(tr => {
+      tr.style.cursor = "pointer";
+      tr.addEventListener("click", () => {
+        const abbr = tr.dataset.abbr;
+        if (abbr) selectState(abbr);
+      });
+    });
   }
 
   // --- Boot ---
