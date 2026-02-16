@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Opportunity Index - Pest Control Expansion Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ====== TOP NAVIGATION ====== -->
+  <nav class="top-nav">
+    <div class="nav-brand">
+      <h1>Market Opportunity Index</h1>
+      <span class="brand-tag">Pest Control</span>
+    </div>
+    <div class="nav-controls">
+      <select class="year-selector" id="yearSelector"></select>
+      <div class="view-toggle">
+        <button class="active" data-view="composite">Composite</button>
+        <button data-view="component">Components</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====== MAIN DASHBOARD ====== -->
+  <main class="dashboard-container" id="dashboardPanel">
+
+    <!-- Hero: Score Card + Map -->
+    <section class="hero-section">
+      <!-- Left: Score Card -->
+      <div class="hero-score-card" id="heroCard">
+        <div class="hero-placeholder" id="heroPlaceholder">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+            <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/>
+          </svg>
+          <p>Select a state to view its MOI</p>
+        </div>
+        <div id="heroContent" style="display:none; width:100%; text-align:center;">
+          <div class="hero-state-name" id="heroStateLabel">STATE</div>
+          <div class="hero-state-full" id="heroStateFull">Select a State</div>
+          <div class="hero-moi-score" id="heroMOI">--</div>
+          <div class="hero-moi-label">MOI Score</div>
+          <div class="hero-band" id="heroBand">--</div>
+          <div class="hero-rank" id="heroRank">Rank: <span>--</span> of 50</div>
+          <div class="hero-components" id="heroComponents">
+            <div class="hero-comp-item"><span class="comp-label">Market Size</span><span class="comp-value" id="heroMSS">--</span></div>
+            <div class="hero-comp-item"><span class="comp-label">Competition</span><span class="comp-value" id="heroCDS">--</span></div>
+            <div class="hero-comp-item"><span class="comp-label">Pest Risk</span><span class="comp-value" id="heroPRS">--</span></div>
+            <div class="hero-comp-item"><span class="comp-label">Growth</span><span class="comp-value" id="heroGTS">--</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Map -->
+      <div class="map-container">
+        <h2>U.S. Market Opportunity</h2>
+        <p class="map-subtitle">Click a state to drill into its expansion profile</p>
+        <div id="us-map"></div>
+        <div class="map-legend" id="mapLegend"></div>
+      </div>
+    </section>
+
+    <!-- Ranked Opportunity Table -->
+    <section>
+      <div class="section-header">
+        <h2>Ranked Opportunity Table</h2>
+        <p>All 50 states ranked by composite MOI score</p>
+      </div>
+      <div class="table-section">
+        <div class="table-header">
+          <h3 id="tableTitle">50 States - 2024</h3>
+          <input type="text" class="table-search" id="tableSearch" placeholder="Search state...">
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="stateTable">
+            <thead>
+              <tr>
+                <th data-col="rank">Rank <span class="sort-icon">▲</span></th>
+                <th data-col="state">State <span class="sort-icon">▲</span></th>
+                <th data-col="moi">MOI <span class="sort-icon">▲</span></th>
+                <th data-col="mss">Market Size <span class="sort-icon">▲</span></th>
+                <th data-col="cds">Competition <span class="sort-icon">▲</span></th>
+                <th data-col="prs">Pest Risk <span class="sort-icon">▲</span></th>
+                <th data-col="gts">Growth <span class="sort-icon">▲</span></th>
+                <th data-col="population">Population <span class="sort-icon">▲</span></th>
+                <th data-col="pest_firm_count">Firms <span class="sort-icon">▲</span></th>
+                <th data-col="comp_density">Per 100K <span class="sort-icon">▲</span></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section>
+      <div class="section-header">
+        <h2>Analytical Views</h2>
+        <p>Multi-dimensional opportunity analysis</p>
+      </div>
+      <div class="charts-grid">
+        <!-- Chart 1: Opportunity Quadrant -->
+        <div class="chart-card">
+          <h3>Opportunity Quadrant</h3>
+          <p class="chart-subtitle">Market Size vs. Competition Density - top-left is ideal</p>
+          <div class="chart-canvas-container">
+            <canvas id="quadrantChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Component Breakdown -->
+        <div class="chart-card breakdown-card">
+          <h3>Component Breakdown</h3>
+          <p class="chart-subtitle" id="breakdownSubtitle">Select a state to view weighted contributions</p>
+          <div class="breakdown-bar-group" id="breakdownBars">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Chart 3: Competition vs Growth -->
+        <div class="chart-card">
+          <h3>Competition vs. Growth</h3>
+          <p class="chart-subtitle">Identify emerging underpenetrated markets</p>
+          <div class="chart-canvas-container">
+            <canvas id="scatterChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: MOI Distribution -->
+        <div class="chart-card">
+          <h3>MOI Distribution</h3>
+          <p class="chart-subtitle">Score distribution across all 50 states</p>
+          <div class="chart-canvas-container">
+            <canvas id="histogramChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sources & Methodology -->
+    <section>
+      <div class="section-header">
+        <h2>Sources & Research Methodology</h2>
+        <p>How the Market Opportunity Index is calculated</p>
+      </div>
+      <div class="methodology-grid">
+        <div class="methodology-card">
+          <h3>Scoring Formula</h3>
+          <p>Each state receives a composite MOI score (0-100) calculated as a weighted sum of four normalized component scores:</p>
+          <div class="formula-block">
+            MOI = (0.35 x Market Size) + (0.30 x Competition) + (0.20 x Pest Risk) + (0.15 x Growth)
+          </div>
+          <p>Each component is normalized using min-max scaling across all 50 states for the selected year, producing scores from 0 (worst) to 100 (best).</p>
+        </div>
+        <div class="methodology-card">
+          <h3>Component Definitions</h3>
+          <ul class="methodology-list">
+            <li><strong>Market Size (35%)</strong> - Total addressable market based on state population. Larger populations indicate more potential residential and commercial customers.</li>
+            <li><strong>Competition (30%)</strong> - Inverse of pest control firm density per 100K residents. Fewer firms per capita means less saturated markets with more room for new entrants.</li>
+            <li><strong>Pest Risk (20%)</strong> - Structural pest vulnerability based on housing age (% of units built before 1994) combined with climate conditions (temperature, humidity, precipitation) that favor pest activity.</li>
+            <li><strong>Growth (15%)</strong> - Year-over-year population growth rate. Growing populations drive new housing construction and expanding demand for pest services.</li>
+          </ul>
+        </div>
+        <div class="methodology-card">
+          <h3>Data Sources</h3>
+          <ul class="methodology-list">
+            <li><strong>Population</strong> - U.S. Census Bureau, Population Estimates Program (PEP), Vintage 2024</li>
+            <li><strong>Pest Control Firms</strong> - U.S. Census Bureau, County Business Patterns (CBP), NAICS 561710 (Exterminating and Pest Control Services)</li>
+            <li><strong>Housing Age</strong> - U.S. Census Bureau, American Community Survey (ACS) 5-Year Estimates, Table B25034 (Year Structure Built)</li>
+            <li><strong>Climate Risk</strong> - Composite index derived from NOAA Climate Normals (temperature, humidity, precipitation) and FEMA National Risk Index</li>
+            <li><strong>Population Growth</strong> - Derived from year-over-year Census PEP estimates</li>
+          </ul>
+        </div>
+        <div class="methodology-card">
+          <h3>Opportunity Bands</h3>
+          <ul class="methodology-list band-list">
+            <li><span class="band-dot" style="background:#0f766e;"></span> <strong>80-100: High Expansion Opportunity</strong> - Large underserved markets with strong structural demand drivers</li>
+            <li><span class="band-dot" style="background:#16a34a;"></span> <strong>60-79: Strong Opportunity</strong> - Favorable market dynamics with manageable competition</li>
+            <li><span class="band-dot" style="background:#ca8a04;"></span> <strong>40-59: Moderate Opportunity</strong> - Balanced markets requiring targeted entry strategy</li>
+            <li><span class="band-dot" style="background:#ea580c;"></span> <strong>20-39: Competitive / Saturated</strong> - High firm density relative to market size</li>
+            <li><span class="band-dot" style="background:#dc2626;"></span> <strong>0-19: Highly Saturated</strong> - Very limited expansion potential under current conditions</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Tooltip -->
+  <div class="map-tooltip" id="mapTooltip">
+    <div class="tt-state"></div>
+    <div class="tt-moi"></div>
+    <div class="tt-row"><span class="tt-label">Market Size</span><span class="tt-value tt-mss"></span></div>
+    <div class="tt-row"><span class="tt-label">Competition</span><span class="tt-value tt-cds"></span></div>
+    <div class="tt-row"><span class="tt-label">Pest Risk</span><span class="tt-value tt-prs"></span></div>
+    <div class="tt-row"><span class="tt-label">Growth</span><span class="tt-value tt-gts"></span></div>
+    <div class="tt-row"><span class="tt-label">Firms per 100K</span><span class="tt-value tt-comp"></span></div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://d3js.org/topojson.v3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Application -->
+  <script src="data.js"></script>
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
