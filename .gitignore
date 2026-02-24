@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data pipeline outputs (generated files, not source)
+dashboard/places_checkpoint.json
+dashboard/places_pest_counts.csv
+dashboard/places_state_summary.csv
+dashboard/priority_city_firms.csv
+dashboard/priority_state_firms.csv
+dashboard/scraper_output/
+
+# Scraper dev environment
+pest_control_scraper_v2/
+
+# Design references (large binary/media files)
+RSS/
+SS/
